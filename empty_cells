@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Ensure a filename is provided as argument
+if [ -z "$1" ]; then
+  echo "Usage: $0 <filename>"
+  exit 1
+fi
+
+# Get the file extension (csv or tsv)
+filename="$1"
+extension="${filename##*.}"
+
+# Set the delimiter based on file extension
+if [[ "$extension" == "tsv" ]]; then
+  delimiter='\t'  # Tab for TSV files
+elif [[ "$extension" == "csv" ]]; then
+  delimiter=','   # Comma for CSV files
+else
+  echo "Unsupported file format! Please provide a .csv or .tsv file."
+  exit 1
+fi
+
+# Count the number of empty cells (blank fields)
+awk -F"$delimiter" '{for(i=1; i<=NF; i++) if($i == "") count++} END {print count}' "$filename"
+
