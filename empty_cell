@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Check if a file was provided
+# Check input
 if [ $# -ne 1 ]; then
     echo "Usage: $0 <input_file>"
     exit 1
@@ -8,51 +8,60 @@ fi
 
 file="$1"
 
-# Check if file exists
+# Validate file
 if [ ! -f "$file" ]; then
     echo "File not found: $file"
     exit 1
 fi
 
-# Determine delimiter based on file extension
+# Determine delimiter
 case "${file##*.}" in
-    csv|txt) delimiter=";" ;;
+    csv|txt) delimiter=';' ;;
     tsv) delimiter=$'\t' ;;
-    *) echo "Unsupported file type. Use .csv, .tsv, or .txt"; exit 1 ;;
+    *) echo "Unsupported file extension"; exit 1 ;;
 esac
 
-# Read the header
+echo "Running empty_cells on the complete dataset, $file, the following counts are reported:"
+
+# Read header and get columns
 IFS= read -r header < "$file"
 IFS="$delimiter" read -ra columns <<< "$header"
 num_columns=${#columns[@]}
 
-# Initialize array for empty cell counts
+# Initialize array
 declare -a empty_counts
 for ((i = 0; i < num_columns; i++)); do
     empty_counts[i]=0
 done
 
-# Process data rows starting from the second line
-tail -n +2 "$file" | while IFS= read -r line || [[ -n "$line" ]]; do
+# Read file line by line (skip header)
+line_number=0
+while IFS= read -r line || [ -n "$line" ]; do
+    ((line_number++))
+
+    # Skip header
+    if [ $line_number -eq 1 ]; then
+        continue
+    fi
+
+    # Split line into fields
     IFS="$delimiter" read -ra fields <<< "$line"
 
     for ((i = 0; i < num_columns; i++)); do
-        val="${fields[i]}"
-        # Remove spaces and carriage returns
-        val="${val//$'\r'/}"
-        val="${val// /}"
-        if [[ -z "$val" ]]; then
+        value="${fields[i]}"
+        # Trim whitespace
+        value="${value#"${value%%[![:space:]]*}"}"
+        value="${value%"${value##*[![:space:]]}"}"
+        if [[ -z "$value" ]]; then
             ((empty_counts[i]++))
         fi
     done
-done
+done < "$file"
 
-echo "Running empty_cells on the complete dataset, $file, the following counts are reported:"
-
-# Print result
+# Output results
 for ((i = 0; i < num_columns; i++)); do
     col="${columns[i]}"
-    col="${col//$'\r'/}"  # Remove any carriage return
+    col="${col//$'\r'/}"
     echo "$col: ${empty_counts[i]}"
 done
 
