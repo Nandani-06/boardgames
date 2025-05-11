@@ -1,0 +1,7 @@
+
+git fetch origin – Fetch the latest changes from the remote repository.
+git checkout demo – Switch to the existing demo branch.
+git add . – Stage all modified files.
+git commit -m "Fix: Update preprocess.sh to correctly handle ratings" – Commit your changes.
+git push origin demo – Push your changes to the demo branch on GitHub.
+
