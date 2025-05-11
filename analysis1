@@ -14,18 +14,22 @@ calculate_correlation() {
   local y_values=()
   local n=${#x_values[@]}
 
-  # Extract y_values (average ratings).  Assumes input is filename
+  # Extract y_values (average ratings).
   local i=0
-  while IFS=$'\t' read -r _ _ _ y _; do # Skip first 3 columns and read 4th
-      if ((i > 0)); then #start from second row
-        y_values+=("$y")
+  while IFS=$'\t' read -r _ _ _ rating _; do
+    if ((i > 0)); then
+      # Check if rating is a valid number; if not, skip it.
+      if [[ "$rating" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+        y_values+=("$rating")
       fi
-      ((i++))
+    fi
+    ((i++))
   done < "$1"
 
+  local n_y=${#y_values[@]}
   # Check if the number of x and y values match
-  if [ ${#x_values[@]} -ne ${#y_values[@]} ]; then
-    echo "Error: Number of x and y values do not match." >&2
+  if [ $n -ne $n_y ]; then
+    echo "Error: Number of x and y values do not match.  x=$n, y=$n_y" >&2
     return 1 # Return non-zero to indicate failure
   fi
 
@@ -44,21 +48,20 @@ calculate_correlation() {
   local sum_x2=0
   local sum_y2=0
   for ((i=0; i<n; i++)); do
-    local dev_x=$(echo "${x_values[i]} - $mean_x" | bc)
-    local dev_y=$(echo "${y_values[i]} - $mean_y" | bc)
+    local dev_x=$(echo "scale=10; ${x_values[i]} - $mean_x" | bc)
+    local dev_y=$(echo "scale=10; ${y_values[i]} - $mean_y" | bc)
     sum_xy=$(echo "scale=10; $sum_xy + ($dev_x * $dev_y)" | bc)
     sum_x2=$(echo "scale=10; $sum_x2 + ($dev_x * $dev_x)" | bc)
     sum_y2=$(echo "scale=10; $sum_y2 + ($dev_y * $dev_y)" | bc)
   done
   local std_x=$(echo "scale=10; sqrt($sum_x2 / $n)" | bc)
   local std_y=$(echo "scale=10; sqrt($sum_y2 / $n)" | bc)
-  local covariance=$(echo "scale=10; $sum_xy / $n" | bc)
 
-  if [ "$std_x" -eq "0" ] || [ "$std_y" -eq "0" ]; then
+  if [ "$(echo "$std_x == 0" | bc -l)" -eq 1 ] || [ "$(echo "$std_y == 0" | bc -l)" -eq 1 ]; then
     echo "0.000" # Correlation is 0 if either standard deviation is 0
     return 0
   fi
-  local correlation=$(echo "scale=3; $covariance / ($std_x * $std_y)" | bc)
+  local correlation=$(echo "scale=3; $sum_xy / ($std_x * $std_y)" | bc)
   echo "$correlation"
   return 0
 }
@@ -66,13 +69,14 @@ calculate_correlation() {
 # Function to count occurrences of mechanics or domains
 count_occurrences() {
   local column_number="$1"
-  awk -F'\t' '
+  local column_name="$2" # added this
+  awk -v col_name="$column_name" -v col_num="$column_number" ' #added these
     BEGIN {
       OFS="\t"
     }
     NR>1 {
-      if ($column_number != "") { # added check for empty column number
-        split($column_number, parts, ";")
+      if (col_num != "") {
+        split($col_num, parts, ";")
         for (part in parts) {
           count[parts[part]]++
         }
@@ -89,18 +93,18 @@ count_occurrences() {
       }
       printf "The most popular %s is %s found in %d games\n", col_name, max_item, max_count
     }
-    ' col_name="$2" "$input_file"
+    ' "$input_file"
 }
 
 # Find most popular mechanics
-count_occurrences 13 "game mechanics"  # Mechanics is the 13th column
+count_occurrences 13 "game mechanics"
 # Find most popular domains
-count_occurrences 14 "game domain"      # Domains is the 14th column
+count_occurrences 14 "game domain"
 
 # Get years and ratings for correlation calculation
 declare -a years
-while IFS=$'\t' read -r _ year _ rating _ _ _ _ _ _ _ _; do #read just year and rating
-    if [[ "$year" =~ ^[0-9]+$ ]]; then # Check if year is a number
+while IFS=$'\t' read -r _ year _ rating _ _ _ _ _ _ _ _; do
+    if [[ "$year" =~ ^[0-9]+$ ]]; then #check if year is a number
         years+=("$year")
     fi
 done < "$input_file"
@@ -112,8 +116,8 @@ echo "The correlation between the year of publication and the average rating is 
 # Get complexity and ratings for correlation calculation
 declare -a complexities
 i=0
-while IFS=$'\t' read -r _ _ _ rating complexity _ _ _ _ _ _ _; do #read rating and complexity
-  if ((i > 0)); then #start from second row.
+while IFS=$'\t' read -r _ _ _ _ complexity _ _ _ _ _ _ _; do
+  if ((i > 0)); then
     complexities+=("$complexity")
   fi
   ((i++))
