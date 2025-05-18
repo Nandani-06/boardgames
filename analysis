@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Usage check
+# Checks if file is provided in input
 if [ -z "$1" ]; then
   echo "Usage: $0 <cleaned_input_file.tsv>"
   exit 1
@@ -8,21 +8,19 @@ fi
 
 input_file="$1"
 
-# ----------------------------
-# Function: Count occurrences in semicolon-separated column
-# ----------------------------
+# This function finds the most occurring item in a specific column
 count_occurrences() {
   local col="$1"
   local label="$2"
   awk -F'\t' -v c="$col" -v name="$label" '
     NR > 1 && $c != "" {
-      n = split($c, parts, ";")
+      n = split($c, parts, ";")   # Split contents from column into array
       for (i = 1; i <= n; i++) {
-        gsub(/^ +| +$/, "", parts[i])
-        count[parts[i]]++
+        gsub(/^ +| +$/, "", parts[i])  #Trims leading and trailing spaces
+        count[parts[i]]++  #Counts occurrences 
       }
     }
-    END {
+    END {    #Goes through the count dictionary to find the most occurring
       max = 0
       for (item in count) {
         if (count[item] > max) {
@@ -35,28 +33,34 @@ count_occurrences() {
   ' "$input_file"
 }
 
-# ----------------------------
-# Function: Pearson Correlation using temporary file
-# ----------------------------
+# Function to calculate Pearson correlation coefficient between two variables in a file with two columns.
+# Assumes whitespace-separated values (no header).
 calculate_correlation() {
   local file="$1"
-
+  #Initialise sum and count to 0
   local sum_x=0 sum_y=0 n=0
+
+  #Calculate the sum of x and y
   while read -r x y; do
     sum_x=$(echo "$sum_x + $x" | bc -l)
     sum_y=$(echo "$sum_y + $y" | bc -l)
     ((n++))
   done < "$file"
 
+  #If no data return 0
   if [ "$n" -eq 0 ]; then
     echo "0.000"
     return
   fi
 
+  #Calculate the mean
   local mean_x=$(echo "$sum_x / $n" | bc -l)
   local mean_y=$(echo "$sum_y / $n" | bc -l)
 
+  #Initialise sum for calculating correlations 
   local sum_xy=0 sum_x2=0 sum_y2=0
+
+  #Compute components for correlation
   while read -r x y; do
     dx=$(echo "$x - $mean_x" | bc -l)
     dy=$(echo "$y - $mean_y" | bc -l)
@@ -65,35 +69,32 @@ calculate_correlation() {
     sum_y2=$(echo "$sum_y2 + ($dy * $dy)" | bc -l)
   done < "$file"
 
+  #Avoids division by 0 if 0 variance in either variables
   if [ "$(echo "$sum_x2 == 0" | bc -l)" -eq 1 ] || [ "$(echo "$sum_y2 == 0" | bc -l)" -eq 1 ]; then
     echo "0.000"
   else
+    # Calculate Pearson correlation: r = Σ[(x - x̄)(y - ȳ)] / sqrt(Σ(x - x̄)² * Σ(y - ȳ)²)
     printf "%.3f\n" "$(echo "$sum_xy / sqrt($sum_x2 * $sum_y2)" | bc -l)"
   fi
 }
 
-# ----------------------------
 # 1. Most popular game mechanics (column 13)
-# ----------------------------
 count_occurrences 13 "game mechanics"
 
-# ----------------------------
 # 2. Most popular game domain (column 14)
-# ----------------------------
 count_occurrences 14 "game domain"
 
-# ----------------------------
 # 3. Correlation: Year (3) vs Rating Average (9)
-# ----------------------------
+#    - Filter valid numeric values
+#    - Save to temp file
+#    - Compute correlation
 tmp1=$(mktemp)
 awk -F'\t' 'NR > 1 && $3 ~ /^[0-9]+$/ && $9 ~ /^[0-9]+(\.[0-9]+)?$/ { print $3, $9 }' "$input_file" > "$tmp1"
 correlation1=$(calculate_correlation "$tmp1")
 rm -f "$tmp1"
 echo "The correlation between the year of publication and the average rating is $correlation1"
 
-# ----------------------------
 # 4. Correlation: Complexity Average (11) vs Rating Average (9)
-# ----------------------------
 tmp2=$(mktemp)
 awk -F'\t' 'NR > 1 && $11 ~ /^[0-9]+(\.[0-9]+)?$/ && $9 ~ /^[0-9]+(\.[0-9]+)?$/ { print $11, $9 }' "$input_file" > "$tmp2"
 correlation2=$(calculate_correlation "$tmp2")
