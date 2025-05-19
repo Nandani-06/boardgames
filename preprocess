@@ -1,5 +1,25 @@
 #!/bin/bash
 
+# ----------------------------------------------------------------------
+# Script Name: preprocess.sh
+#
+# Description:
+#   This script preprocesses a raw data file (e.g., CSV or TXT) of game 
+#   records by applying the following cleaning steps:
+#
+#     1. Converts semicolon (;) separators to tab (\t) characters
+#     2. Converts Microsoft Windows line endings (carriage return \r) 
+#        to Unix format
+#     3. Replaces commas with dots in the 4th column (Rating Average)
+#     4. Removes non-ASCII characters to clean malformed text
+#     5. Identifies and fills in missing IDs (in the first column) 
+#        with unique new values starting from the current maximum
+#     6. Outputs the cleaned file with the same base name and `.tsv` extension
+#
+# Usage:
+#   ./preprocess.sh <input_file>
+# ----------------------------------------------------------------------
+
 # Exits in case of any error
 set -e
 
