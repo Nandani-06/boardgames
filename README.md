@@ -13,10 +13,26 @@ This project analyzes a dataset of board games to uncover trends in game mechani
 
 This project includes three Bash scripts:
 
-**`empty_cells`**: Scans a raw board game dataset and counts missing values per column     
-**`preprocess`**: Cleans the dataset by standardizing formats and filling missing IDs     
-**`analysis`**: Performs statistical analysis on the cleaned data                       
+### 1. `empty_cells` 
+- Indicates how many empty cells there are in each column of a data set that is separated by semicolons.
+- enables the identification of flaws in data quality prior to analysis.
 
+### 2. `preprocess`
+The raw data set is cleaned and transformed:
+Tabs are used in place of semicolon delimiters.
+In numeric columns, it substitutes dots for commas.
+- Eliminates non-ASCII characters and Windows carriage returns.
+- Automatically adds new, distinct values to missing IDs.
+Sanitised `.tsv` is printed out for analysis. 
+
+### 3. `analysis`
+
+The sanitised data is subjected to statistical analysis:
+
+- Identifies the most frequent **game mechanic** and **game domain** (based on occurrence counts).
+- Calculates the **Pearson correlation** between:
+  - Year of publication and average rating.
+  - Complexity and average rating.
 ---
 
 ## 🛠 How to Use
@@ -59,3 +75,9 @@ Outputs:
 * Most popular **game domain**
 * Pearson correlation between **Year** and **Average Rating**
 * Pearson correlation between **Complexity** and **Average Rating**
+
+---
+## 🔗 Project Repository
+You can view or clone the project on GitHub:  
+👉 [https://github.com/Nandani-06/boardgames](https://github.com/Nandani-06/boardgames)
+
