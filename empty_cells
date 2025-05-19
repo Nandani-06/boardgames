@@ -1,5 +1,25 @@
 #!/bin/bash
 
+# ----------------------------------------------------------------------
+# Script Name: empty_cells
+#
+# Description:
+#   This script analyzes a delimited text file (CSV, TSV, or TXT) and 
+#   reports the number of empty (missing) cells in each column.
+#   It reads the column headers from the first line of the file and 
+#   scans all subsequent rows to count missing values per column.
+#
+# Features:
+#   - Supports input files with semicolon (;) or tab (\t) delimiters
+#   - Automatically detects delimiter based on file extension
+#   - Trims whitespace before checking for empty values
+#   - Outputs counts of empty cells for each column by name
+#
+# Usage:
+#   ./empty_cells <input_file>
+#   Accepted file types: .csv, .txt, .tsv
+#-----------------------------------------------------------------------
+
 # Check input i.e. number of arguements passed
 if [ $# -ne 1 ]; then
     echo "Usage: $0 <input_file>"
