@@ -1,5 +1,26 @@
 #!/bin/bash
 
+# ----------------------------------------------------------------------
+# Script Name: analyze_game_data
+#
+# Description:
+#   This script performs analysis on a cleaned, tab-separated dataset 
+#   of board games. It provides insights into:
+#
+#     1. The most popular game mechanics (from column 13)
+#     2. The most popular game domains (from column 14)
+#     3. The correlation between year of publication (column 3) and 
+#        average game rating (column 9)
+#     4. The correlation between game complexity (column 11) and 
+#        average game rating (column 9)
+#
+#   It uses `awk` for data extraction and preprocessing, and `bc` for
+#   computing statistics such as Pearson correlation.
+#
+# Usage:
+#   ./analyze_game_data <cleaned_input_file.tsv>
+# ----------------------------------------------------------------------
+
 # Checks if file is provided in input
 if [ -z "$1" ]; then
   echo "Usage: $0 <cleaned_input_file.tsv>"
